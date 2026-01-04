@@ -1,43 +1,68 @@
 use std::env;
-use quinn::crypto::rustls;
+use anyhow::Result;
 use rcgen::generate_simple_self_signed;
-use rcgen::CertifiedKey;
+use rustls::{Certificate as RustlsCertificate, PrivateKey as RustlsPrivateKey};
+
 #[tokio::main]
-async fn main()-> anyhow::Result<()> {
-    let arg : Vec<String> = env.arg().collect();
-    if args.len()<2
-{
-    println!("Usage : ");
-    println!("Chatty server <port>");
-    println!("Chatty connect <ip> <port>");
+async fn main() -> Result<()> {
+    let args: Vec<String> = env::args().collect();
+
+    if args.len() < 2 {
+        println!("Usage:");
+        println!("Chatty server <ip> <port>");
+        println!("Chatty connect <ip> <port>");
+        return Ok(());
+    }
+
+    if &args[1] == "server" {
+        if args.len() < 4 {
+            println!("Missing IP or port for server.");
+            return Ok(());
+        }
+        let ip = &args[2];
+        let port: u16 = args[3].parse()?;
+        server(ip, port).await?;
+    } else if &args[1] == "connect" {
+        if args.len() < 4 {
+            println!("Missing IP or port for client.");
+            return Ok(());
+        }
+        let ip = &args[2];
+        let port: u16 = args[3].parse()?;
+        connect(ip, port).await?;
+    } else {
+        println!("Command not recognized.");
+    }
+
+    Ok(())
 }
 
-if &args[1]=="server" {
-    let port:u16 = &args[2];
-    server(port).await?;
-}
-else if &args[1]=="connect" {
-    let ip:str = &args[2];
-    let port:u16 = &args[3];
-    connect(ip,port).await?;
-}
-else{
-    println!("Command not recognized.")
-}
-async fn server(port : u16) -> anyhow::Result<()>{
-    //implement the server
-    let server_ip = 192.168.0.4;
-    let cert = generate_simple_self_signed(vec!["server_ip".to_string()])?;
-    let cer_der = cert.serialize_der();
-    let key_der = cert.serialise_private_key_der();
-    let der_cert = vec![rustls::Certificate(cert_der)];
-    let key = rustls::PrivateKey(key_der);
-    OK(())
-}
-async fn connect(ip : &str, port :u16)->anyhow::Result<()>{
-    //implement the client side
-    // Ok(())
+async fn server(ip: &str, port: u16) -> Result<()> {
+    println!("Starting server on {}:{} ...", ip, port);
+
+    
+    let cert = generate_simple_self_signed(vec![ip.to_string()])?;
+
+    
+    let cert_der = cert.serialize_der()?;                  
+    let key_der = cert.serialize_private_key_der();        
+
+    
+    let rustls_cert = RustlsCertificate(cert_der);
+    let rustls_key = RustlsPrivateKey(key_der);
+
+    println!("Server certificate and key generated.");
+    println!("Certificate bytes: {}, Key bytes: {}", rustls_cert.0.len(), rustls_key.0.len());
+
+    
+
+    Ok(())
 }
 
-}
+async fn connect(ip: &str, port: u16) -> Result<()> {
+    println!("Client connecting to {}:{} ...", ip, port);
 
+    
+
+    Ok(())
+}
