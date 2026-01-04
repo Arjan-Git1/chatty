@@ -53,8 +53,21 @@ async fn server(ip: &str, port: u16) -> Result<()> {
 
     println!("Server certificate and key generated.");
     println!("Certificate bytes: {}, Key bytes: {}", rustls_cert.0.len(), rustls_key.0.len());
-
-    
+    let mut server_config = quinn::ServerConfig::with_single_cert(
+        vec![rustls_cert],
+        rustls_key
+    );
+    let endpoint = quinn::Endpoint::server(server_config,format("{}:{}",ip,port).parse()?)?;
+    while let Some(conn)= endpoint.accept().await{
+        tokio::spawn(handle_connection(conn));
+    }
+    async fn handle_connection(conn : quinn::Connecting)->anyhow::Result<()>{
+        let connection = conn.await?;
+        println("Client Found and Connected!: {:?}", connection.remote_adress());
+        while let Ok(Some(stream)) = connection.accept_uni().await(){
+            tokio::spawn(handle_stream(stream));
+        }
+    }
 
     Ok(())
 }
