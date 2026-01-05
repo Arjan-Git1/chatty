@@ -68,7 +68,12 @@ async fn server(ip: &str, port: u16) -> Result<()> {
             tokio::spawn(handle_stream(stream));
         }
     }
-
+    async fn handle_stream(mut stream: quinn::RecvStream)-> anyhow::Result<()>{
+        let mut buf = [0u8; 1024];
+        while let Ok(n)= stream.read(&mut buf).await{
+            println!("Received : {}", String::from_utf8_lossy(&buf[..n]));
+        }
+    }
     Ok(())
 }
 
